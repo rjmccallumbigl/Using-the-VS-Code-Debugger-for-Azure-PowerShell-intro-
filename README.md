@@ -1,12 +1,12 @@
 # Intro to Using the VS Code Debugger for Azure PowerShell
 
 ### Prerequisites:
-#### 1. Install our IDE VS Code: https://code.visualstudio.com/
-#### 2. Install the PowerShell extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell
+1. Install our IDE VS Code: https://code.visualstudio.com/
+2. Install the PowerShell extension: https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell
 
 ### Additional Documentation: 
-#### 1. Using Visual Studio Code for PowerShell Development: https://docs.microsoft.com/en-us/powershell/scripting/dev-cross-plat/vscode/using-vscode?view=powershell-7
-#### 2. Get started with Azure PowerShell: https://docs.microsoft.com/en-us/powershell/azure/get-started-azureps?view=azps-4.3.0
+1. Using Visual Studio Code for PowerShell Development: https://docs.microsoft.com/en-us/powershell/scripting/dev-cross-plat/vscode/using-vscode?view=powershell-7
+2. Get started with Azure PowerShell: https://docs.microsoft.com/en-us/powershell/azure/get-started-azureps?view=azps-4.3.0
 
 ## How to Debug PowerShell Scripts
 Let's say you have a variable set to 1.
