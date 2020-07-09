@@ -55,4 +55,4 @@ If we fix this by changing `-gt` (greater than) to `-lt` (less than) and debuggi
 
 ![Debugging helped!](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/debugging_helped.gif)
 
-Our script works as intended.
+Our script works as intended. Notice the debugger actually "steps into" the function this time, indicating our loop conditional is true (the numbers 1 through 4 are indeed less than 5).
