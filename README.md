@@ -1,7 +1,7 @@
 # Intro to Using the VS Code Debugger for Azure PowerShell
 
 ### Prerequisites:
-1. Install our IDE VS Code
+1. Install our IDE **VS Code**
    * https://code.visualstudio.com/
 2. Install the PowerShell extension
    * https://marketplace.visualstudio.com/items?itemName=ms-vscode.PowerShell
