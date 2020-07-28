@@ -61,3 +61,27 @@ If we fix this by changing `-gt` (greater than) to `-lt` (less than) and debuggi
 ![Debugging helped!](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/debugging_helped.gif)
 
 Our script works as intended. Notice the debugger actually "steps into" the function this time, indicating our loop conditional is true (the numbers 1 through 4 are indeed less than 5).
+
+## How to Debug Azure PowerShell Scripts
+
+Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't too different. For a basic example, let's say I want to see if my Azure VM "RescueVM" is the first VM returned from running `Get-AzVM` (just because). Consider the following script:
+
+      # Let's grab all of our VMs
+      $azureVMs = Get-AzVM;
+
+      # And display the first one
+      $azureVMs[0];
+
+      # And display the VM that matches the name "RescueVM"
+      $azureVMs | where Name -EQ "RescueVM"
+
+By default and without any parameters, `Get-AzVM` will grab all of the VM objects in your subscription and return their properties in an array ([more info](https://docs.microsoft.com/en-us/powershell/module/az.compute/get-azvm?view=azps-4.4.0)). By assigning this function to our variable `$azureVMs`, we accomplish a few things:
+
+1. If we need to see the VM objects again, we don't need to make the call by running Get-AzVM, we just need to print the content of $azureVMs (unless we have made an update). This is good practice because it saves us time and prevents us from exceeding API calls in heavier scripts.
+2. We can grab all of our VMs and narrow it down based on our needs by grabbing a VM object from the array. E.G. `$azureVMs[0]` grabs the first VM object returned from this array, while `$azureVMs | Where-Object Name -eq "RescueVM"` returns the full object and properties of the VM that matches the name "RescueVM" ([more info on array functions](https://docs.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-arrays?view=powershell-7)).
+
+By running our script, we grab all the VMs, display the VM in the first spot of the array, and then display the properties of "RescueVM". Logging variable properties in your script is an easy and quick way to make sure a variable is what it's supposed to be at a certain point in execution. However, this can be clunky if you are working on a production script because cleanup can be a hassle. If you want to dive into all of the variables returned from an Azure PowerShell command such as `Get-AzVM`, you can use the debugger instead for quicker and cleaner results. Let's add a breakpoint to the next line to pause our execution and view the variables in our 3 line script after calling `Get-AzVM`:
+
+![Inspecting our variable](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging.gif)
+
+We can see all of the VM objects returned in our array, the internal functions such as "Count", the return values' types, etc.
