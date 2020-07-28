@@ -84,4 +84,4 @@ By running our script, we grab all the VMs, display the VM in the first spot of 
 
 ![Inspecting our variable](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging.gif)
 
-We can see all of the VM objects returned in our array, the internal functions such as "Count", the return values' types, etc.
+We can see all of the VM objects returned in our array, their properties, the internal functions such as "Count", the return values' types, etc.
