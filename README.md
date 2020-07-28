@@ -64,7 +64,11 @@ Our script works as intended. Notice the debugger actually "steps into" the func
 
 ## How to Debug Azure PowerShell Scripts
 
-Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't too different. For a basic example, let's say I want to see if my Azure VM "RescueVM" is the first VM returned from running `Get-AzVM` (just because). Consider the following script:
+Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't too different. 
+
+### Azure PowerShell Variables
+
+For a basic example, let's say I want to see if my Azure VM "RescueVM" is the first VM returned from running `Get-AzVM` (just because). Consider the following script:
 
       # Let's grab all of our VMs
       $azureVMs = Get-AzVM;
@@ -84,4 +88,9 @@ By running our script, we grab all the VMs, display the VM in the first spot of 
 
 ![Inspecting our variable](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging.gif)
 
-We can see all of the VM objects returned in our array, the internal functions such as "Count", the return values' types, etc.
+We can see all of the VM objects returned in our array, the internal functions such as "length", the return values' types, etc.
+
+### Azure PowerShell Script
+
+Now, let's say we have a slightly more complicated script that creates a new VM.
+<!-- TODO: Add complicated script, like the one that creates a new VM -->
