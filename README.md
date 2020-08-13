@@ -12,6 +12,8 @@
 2. Get started with Azure PowerShell
     * https://docs.microsoft.com/en-us/powershell/azure/get-started-azureps?view=azps-4.3.0
     * https://github.com/Azure/azure-powershell
+3. PowerShell in Visual Studio Code
+    * https://code.visualstudio.com/docs/languages/powershell
 
 ## How to Debug PowerShell Scripts
 Let's say you have a variable set to 1.
@@ -96,3 +98,9 @@ We can see all of the VM objects returned in our array, the internal functions s
 
 Now, let's say we have a slightly more complicated script that creates a new VM.
 <!-- TODO: Add complicated script, like the one that creates a new VM -->
+
+### Advanced Debugging: 
+1. Debugging PowerShell script in Visual Studio Code – Part 1
+   * https://devblogs.microsoft.com/scripting/debugging-powershell-script-in-visual-studio-code-part-1/
+2. Debugging PowerShell script in Visual Studio Code – Part 2
+   * https://devblogs.microsoft.com/scripting/debugging-powershell-script-in-visual-studio-code-part-2/
