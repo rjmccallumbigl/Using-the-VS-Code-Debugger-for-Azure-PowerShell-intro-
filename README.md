@@ -22,10 +22,12 @@ Let's say you have a variable set to 1.
 
 You make a script that is supposed to check if the variable is 5. If not, increment the variable by 1 until it becomes 5.
 
+```PowerShell
     while ($myFirstVariable -gt 5) {
        $myFirstVariable++;
     }
-    
+```
+
 But when you print it, the variable is still one?!
 
 `Write-Host $myFirstVariable;`
@@ -45,17 +47,18 @@ Every variable in your session will display it's value in the box to the left. Y
 However, there's something wrong with our loop. Instead of showing us our variable incrementing, the script continues without going inside the loop. This means the conditional in our variable is false or has not been met.
 
 ### Our conditional
-
+```PowerShell
     while ($myFirstVariable -gt 5) {
        $myFirstVariable++;
     }
-    
-### Our conditional in Pseudocode
+```
 
+### Our conditional in Pseudocode
+```PowerShell
     while ($myFirstVariable is greater than 5) {
        Add 1 to $myFirstVariable;
     }
-
+```
 Well there's our problem. According to the [official documentation](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comparison_operators?view=powershell-7), I used the wrong conditional operator. The loop will never execute properly because the number 1 is not greater than the number 5. 
 
 If we fix this by changing `-gt` (greater than) to `-lt` (less than) and debugging again...
@@ -72,6 +75,7 @@ Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't t
 
 For a basic example, let's say I want to see if my Azure VM "RescueVM" is the first VM returned from running `Get-AzVM` (just because). Consider the following script:
 
+```PowerShell
       # Let's grab all of our VMs
       $azureVMs = Get-AzVM;
 
@@ -80,7 +84,7 @@ For a basic example, let's say I want to see if my Azure VM "RescueVM" is the fi
 
       # And display the VM that matches the name "RescueVM"
       $azureVMs | where Name -EQ "RescueVM"
-
+```
 By default and without any parameters, `Get-AzVM` will grab all of the VM objects in your subscription and return their properties in an array ([more info](https://docs.microsoft.com/en-us/powershell/module/az.compute/get-azvm?view=azps-4.4.0)). By assigning this function to our variable `$azureVMs`, we accomplish a few things:
 
 1. If we need to see the VM objects again, we don't need to make the call by running Get-AzVM, we just need to print the content of $azureVMs (unless we have made an update). This is good practice because it saves us time and prevents us from exceeding API calls in heavier scripts.
@@ -98,8 +102,7 @@ We can see all of the VM objects returned in our array, the internal functions s
 
 Now, let's say we have a slightly more complicated script that creates a new VM ([repo](https://github.com/rjmccallumbigl/Azure-PowerShell---Create-New-VM/blob/master/createNewVM.ps1)). I looked at the documentation, modified it to automatically grab some things, request other parameters to pass in as variables, and handle it mostly automatically.
 
-```
-
+```PowerShell
 ###########################################################################################################################################################
 <#
 # .SYNOPSIS
@@ -260,11 +263,20 @@ At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 
 
    * This final error message is the response that we failed to create our VM using the supplied script due to a broken networkProfile. This is because of the same initial error with our `$NIC` object. So basically, if the Networking portion is broken, we will not be able to successfully provision a VM using our script.
 
-So we understand our error messages and we have narrowed it down to the declared `$NIC` object on line 59 grandfathering all of our other problems. But we don't know the proper format for this parameter. What now?
+So we understand our error messages and we have narrowed it down to the declared `$NIC` object on line 59 grandfathering all of our other problems. But we don't know the proper format for this parameter. What now?!
 
 Let's use the Debugger!
 
+![Debugging our VM script](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging_new_vm_script.gif)
 
+Here I did the following to successfully debug my script:
+
+1. I set a Breakpoint on the problem line, line 59. My script continues until I try to create the `$NIC` object. I am able to see all of the variables created up to now. 
+2. [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), the parameter `-SubnetId` is defined as `the ID of the subnet for which to create a network interface`. The value I'm passing in at the parameter `-SubnetId` is `$Vnet.Subnets[0]`. 
+   * **Breakdown**: The VNET is stored in `$VNet` and `$VNet.Subnets` grabs the VNET's associated Subnets as an array. Thus, `$Vnet.Subnets[0]` grabs the first (and quite possibly, only) member of the array, which is our Subnet. 
+   * **Issue**: The problem here, as defined by our error message, is that `-SubnetId` is expecting a resource Id that starts with '/subscriptions/{subscriptionId}...', not the Subnet object itself. How do we convert or extract the ID from the object? 
+   * **Solution**: Well luckily, the Debugger shows us the `Id` is a parameter we can select from the object with `$Vnet.Subnets[0].Id`, resulting in the string `/subscriptions/81d1b603-b602-4534-952e-a8889d3421a1/resourceGroups/examplevmRG/providers/Microsoft.Network/virtualNetworks/examplevmNet/subnets/examplevmSubnet` being passed to `New-AzNetworkInterface` rather than the Subnet object. Success!
+3. And as a matter of fact, we require this for the parameter `-PublicIpAddressId` as well! [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), this paramter `specifies the ID of a PublicIPAddress object to assign to a network interface`. Thus it needs the ID as well, instead of the object itself. I should've noticed by the names that it should be the ID of the object that we pass to our function, not the object itself. This is why our naming convention can be important; it can avoid careless errors down the road.
 
 ### Advanced Debugging: 
 1. Debugging PowerShell script in Visual Studio Code – Part 1
