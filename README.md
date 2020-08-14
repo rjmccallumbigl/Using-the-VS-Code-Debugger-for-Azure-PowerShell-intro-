@@ -96,8 +96,7 @@ We can see all of the VM objects returned in our array, the internal functions s
 
 ### Azure PowerShell Script
 
-Now, let's say we have a slightly more complicated script that creates a new VM.
-<!-- TODO: Add complicated script, like the one that creates a new VM -->
+Now, let's say we have a slightly more complicated script that creates a new VM ([repo](https://github.com/rjmccallumbigl/Azure-PowerShell---Create-New-VM/blob/master/createNewVM.ps1)). I looked at the documentation, modified it to automatically grab some things, request other parameters to pass in as variables, and handle it mostly automatically.
 
 ```
 
@@ -159,7 +158,7 @@ New-AzResourceGroup -Name $ResourceGroupName -Location $LocationName
 $SingleSubnet = New-AzVirtualNetworkSubnetConfig -Name $SubnetName -AddressPrefix $SubnetAddressPrefix
 $Vnet = New-AzVirtualNetwork -Name $NetworkName -ResourceGroupName $ResourceGroupName -Location $LocationName -AddressPrefix $VnetAddressPrefix -Subnet $SingleSubnet
 $PIP = New-AzPublicIpAddress -Name $PublicIPAddressName -ResourceGroupName $ResourceGroupName -Location $LocationName -AllocationMethod Dynamic
-$NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $ResourceGroupName -Location $LocationName -SubnetId $Vnet.Subnets[0].Id -PublicIpAddressId $PIP.Id
+$NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $ResourceGroupName -Location $LocationName -SubnetId $Vnet.Subnets[0] -PublicIpAddressId $PIP
 $Credential = New-Object System.Management.Automation.PSCredential ($VMLocalAdminUser, $VMLocalAdminSecurePassword)
 
 # Create VM configuration
@@ -170,8 +169,96 @@ $VirtualMachine = Set-AzVMSourceImage -VM $VirtualMachine -PublisherName $publis
 
 # Create VM
 New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationName -VM $VirtualMachine -Verbose
+```
+
+The parameters are accepted and the Resource Group is created:
 
 ```
+PS C:\Users\rymccall\OneDrive - Microsoft\PowerShell> c:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1
+cmdlet createNewVM.ps1 at command pipeline position 1
+Supply values for the following parameters:
+vmName: examplevm
+VMLocalAdminUser: rymccall
+VMLocalAdminSecurePassword: *****************
+
+
+ResourceGroupName : examplevmRG
+Location          : eastus
+ProvisioningState : Succeeded
+Tags              :
+ResourceId        : /subscriptions/81d1b603-b602-4534-952e-a8889d3421a1/resourceGroups/examplevmRG
+
+```
+
+But it looks like we're getting error after error (warnings and verbose logging removed):
+
+```
+New-AzNetworkInterface : Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that 
+start with '/subscriptions/{subscriptionId}' or '/providers/{resourceProviderNamespace}/'.
+StatusCode: 400
+ReasonPhrase: Bad Request
+ErrorCode: LinkedInvalidPropertyId
+ErrorMessage: Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that start with  
+'/subscriptions/{subscriptionId}' or '/providers/{resourceProviderNamespace}/'.
+OperationID : 07a40ecb-c034-4380-8ad2-2cbcf56dec7c
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:59 char:8
++ $NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $Reso ...
++        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : CloseError: (:) [New-AzNetworkInterface], NetworkCloudException
+    + FullyQualifiedErrorId : Microsoft.Azure.Commands.Network.NewAzureNetworkInterfaceCommand
+
+Add-AzVMNetworkInterface : Cannot validate argument on parameter 'Id'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:65 char:68
++ ... ualMachine = Add-AzVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
++                                                                   ~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-AzVMNetworkInterface], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Microsoft.Azure.Commands.Compute.AddAzureVMNetworkInterfaceCommand
+
+VERBOSE: Performing the operation "New" on target "examplevm".
+New-AzVM : Required parameter 'networkProfile' is missing (null).
+ErrorCode: InvalidParameter
+ErrorMessage: Required parameter 'networkProfile' is missing (null).
+ErrorTarget: networkProfile
+StatusCode: 400
+ReasonPhrase: Bad Request
+OperationID : bb9bbad1-365a-484c-b46d-9a8017121da7
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 char:1
++ New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationNam ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : CloseError: (:) [New-AzVM], ComputeCloudException
+    + FullyQualifiedErrorId : Microsoft.Azure.Commands.Compute.NewAzureVMCommand
+```
+Needless to say, our script failed and our VM was not created. Okay, so our code has some bugs. No problem, let's break this down by the Error Messages. It looks like there are 3 errors here:
+
+```
+ErrorMessage: Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that start with  
+'/subscriptions/{subscriptionId}' or '/providers/{resourceProviderNamespace}/'.
+OperationID : 07a40ecb-c034-4380-8ad2-2cbcf56dec7c
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:59 char:8
++ $NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $Reso ...
+```
+
+   * This error message is saying the property we entered on line 59 is incorrect because it's not a resource Id. Thus this command failed, and our variable `$NIC` is broke, null, and void.
+
+```
+Add-AzVMNetworkInterface : Cannot validate argument on parameter 'Id'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:65 char:68
++ ... ualMachine = Add-AzVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
+```
+
+   * This error message is saying the parameter we entered on line 65 at the 68th character is incorrect because it's a null or empty value. This value is `$NIC.Id` in our script. The previous error failed to set `$NIC` correctly. Thus this command failed because our variable $NIC is broke, null, and void.
+
+```
+ErrorMessage: Required parameter 'networkProfile' is missing (null).
+ErrorTarget: networkProfile
+StatusCode: 400
+ReasonPhrase: Bad Request
+OperationID : bb9bbad1-365a-484c-b46d-9a8017121da7
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 char:1
++ New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationNam ...
+```
+
+   * This final error message is the one saying the parameter we entered on line 65 at the 68th charcter is incorrect because it's a null or empty value. This value is `$NIC.Id` in our script. The previous error failed to set `$NIC` correctly. Thus this command failed because our variable $NIC is broke, null, and void.
 
 ### Advanced Debugging: 
 1. Debugging PowerShell script in Visual Studio Code – Part 1
