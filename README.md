@@ -276,10 +276,11 @@ Here I did the following to successfully debug my script:
    * **Breakdown**: The VNET is stored in `$VNet` and `$VNet.Subnets` grabs the VNET's associated Subnets as an array. Thus, `$Vnet.Subnets[0]` grabs the first (and quite possibly, only) member of the array, which is our Subnet. 
    * **Issue**: The problem here, as defined by our error message, is that `-SubnetId` is expecting a resource Id that starts with '/subscriptions/{subscriptionId}...', not the Subnet object itself. How do we convert or extract the ID from the object? 
    * **Solution**: Well luckily, the Debugger shows us the `Id` is a parameter we can select from the object with `$Vnet.Subnets[0].Id`, resulting in the string `/subscriptions/81d1b603-b602-4534-952e-a8889d3421a1/resourceGroups/examplevmRG/providers/Microsoft.Network/virtualNetworks/examplevmNet/subnets/examplevmSubnet` being passed to `New-AzNetworkInterface` rather than the Subnet object. Success!
-3. And as a matter of fact, we require this for the parameter `-PublicIpAddressId` as well! [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), this paramter `specifies the ID of a PublicIPAddress object to assign to a network interface`. Thus it needs the ID as well, instead of the object itself. I should've noticed by the names that it should be the ID of the object that we pass to our function, not the object itself. This is why our naming convention can be important; it can avoid careless errors down the road.
+3. And as a matter of fact, we require this for the parameter `-PublicIpAddressId` as well! [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), this paramter `specifies the ID of a PublicIPAddress object to assign to a network interface`. Thus it also needs the ID instead of the object itself. I should've noticed by the names that it should be the ID of the object that we pass to our function, not the object itself. This is why our naming convention can be important; it can avoid careless errors down the road.
 
 ### Advanced Debugging: 
 1. Debugging PowerShell script in Visual Studio Code – Part 1
    * https://devblogs.microsoft.com/scripting/debugging-powershell-script-in-visual-studio-code-part-1/
 2. Debugging PowerShell script in Visual Studio Code – Part 2
    * https://devblogs.microsoft.com/scripting/debugging-powershell-script-in-visual-studio-code-part-2/
+  
