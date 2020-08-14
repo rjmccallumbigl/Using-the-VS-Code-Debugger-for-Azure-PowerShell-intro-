@@ -12,6 +12,8 @@
 2. Get started with Azure PowerShell
     * https://docs.microsoft.com/en-us/powershell/azure/get-started-azureps?view=azps-4.3.0
     * https://github.com/Azure/azure-powershell
+3. PowerShell in Visual Studio Code
+    * https://code.visualstudio.com/docs/languages/powershell
 
 ## How to Debug PowerShell Scripts
 Let's say you have a variable set to 1.
@@ -20,10 +22,12 @@ Let's say you have a variable set to 1.
 
 You make a script that is supposed to check if the variable is 5. If not, increment the variable by 1 until it becomes 5.
 
+```PowerShell
     while ($myFirstVariable -gt 5) {
        $myFirstVariable++;
     }
-    
+```
+
 But when you print it, the variable is still one?!
 
 `Write-Host $myFirstVariable;`
@@ -43,17 +47,18 @@ Every variable in your session will display it's value in the box to the left. Y
 However, there's something wrong with our loop. Instead of showing us our variable incrementing, the script continues without going inside the loop. This means the conditional in our variable is false or has not been met.
 
 ### Our conditional
-
+```PowerShell
     while ($myFirstVariable -gt 5) {
        $myFirstVariable++;
     }
-    
-### Our conditional in Pseudocode
+```
 
+### Our conditional in Pseudocode
+```PowerShell
     while ($myFirstVariable is greater than 5) {
        Add 1 to $myFirstVariable;
     }
-
+```
 Well there's our problem. According to the [official documentation](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_comparison_operators?view=powershell-7), I used the wrong conditional operator. The loop will never execute properly because the number 1 is not greater than the number 5. 
 
 If we fix this by changing `-gt` (greater than) to `-lt` (less than) and debugging again...
@@ -64,8 +69,13 @@ Our script works as intended. Notice the debugger actually "steps into" the func
 
 ## How to Debug Azure PowerShell Scripts
 
-Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't too different. For a basic example, let's say I want to see if my Azure VM "RescueVM" is the first VM returned from running `Get-AzVM` (just because). Consider the following script:
+Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't too different. 
 
+### Azure PowerShell Variables
+
+For a basic example, let's say I want to see if my Azure VM "RescueVM" is the first VM returned from running `Get-AzVM` (just because). Consider the following script:
+
+```PowerShell
       # Let's grab all of our VMs
       $azureVMs = Get-AzVM;
 
@@ -74,7 +84,7 @@ Now that we know how to debug PowerShell using VS Code, Azure PowerShell isn't t
 
       # And display the VM that matches the name "RescueVM"
       $azureVMs | where Name -EQ "RescueVM"
-
+```
 By default and without any parameters, `Get-AzVM` will grab all of the VM objects in your subscription and return their properties in an array ([more info](https://docs.microsoft.com/en-us/powershell/module/az.compute/get-azvm?view=azps-4.4.0)). By assigning this function to our variable `$azureVMs`, we accomplish a few things:
 
 1. If we need to see the VM objects again, we don't need to make the call by running Get-AzVM, we just need to print the content of $azureVMs (unless we have made an update). This is good practice because it saves us time and prevents us from exceeding API calls in heavier scripts.
@@ -84,4 +94,193 @@ By running our script, we grab all the VMs, display the VM in the first spot of 
 
 ![Inspecting our variable](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging.gif)
 
-We can see all of the VM objects returned in our array, their properties, the internal functions such as "Count", the return values' types, etc.
+We can see all of the VM objects returned in our array, the internal functions such as "length", the return values' types, etc.
+
+(BTW, if you're curious about catFacts.ps1, I was adapting [this script](https://gist.github.com/johnallers/178576f097a8a7986fcb17a92c88a486) to understand PowerShell API calls, definitely not preparing to prank co-workers, I swear.)
+
+### Azure PowerShell Script
+
+Now, let's say we have a slightly more complicated script that creates a new VM ([repo](https://github.com/rjmccallumbigl/Azure-PowerShell---Create-New-VM/blob/master/createNewVM.ps1)). I looked at the documentation, modified it to automatically grab some things, request other parameters to pass in as variables, and handle it mostly automatically.
+
+```PowerShell
+###########################################################################################################################################################
+<#
+# .SYNOPSIS
+#       Create a new Managed VM.
+#
+# .DESCRIPTION
+#       Create a new Managed VM. If you'd like to modify the defaults, please review change the code prior to running.
+#       https://docs.microsoft.com/en-us/powershell/module/az.compute/new-azvm?view=azps-4.4.0
+#
+# .PARAMETER vmName
+#       The name of the VM.
+#
+# .PARAMETER VMLocalAdminUser
+#       The username you will use on your VM.
+#
+# .PARAMETER VMLocalAdminSecurePassword
+#       The password you will use on your VM.
+#
+# .EXAMPLE
+#       createNewVMs -n name -u Username -p Password!234
+#>
+###########################################################################################################################################################
+
+# Set the Parameters for the script
+param (
+    [Parameter(Mandatory = $true, HelpMessage = "The name of the VM.")]
+    [Alias('n')]
+    [string] 
+    $vmName,
+    [Parameter(Mandatory = $true, HelpMessage = "The username you will use on your VM.")]
+    [Alias('u')]
+    [string]
+    $VMLocalAdminUser,
+    [Parameter(Mandatory = $true, HelpMessage = "The password you will use on your VM.")]
+    [Alias('p')]
+    [SecureString]
+    $VMLocalAdminSecurePassword
+)
+
+# Declare variables, modify as necessary
+$LocationName = "eastus"
+$publisherName = "MicrosoftWindowsServer"
+$offerName = "windowsserver"
+$skuName = "2019-Datacenter"
+$ResourceGroupName = $VMName + "RG"
+$VMSize = "Standard_D2_v3"
+$NetworkName = $VMName + "Net"
+$NICName = $VMName + "NIC"
+$SubnetName = $VMName + "Subnet"
+$SubnetAddressPrefix = "10.0.0.0/24"
+$VnetAddressPrefix = "10.0.0.0/16"
+$PublicIPAddressName = $VMName + "PIP"
+
+# Create resources
+New-AzResourceGroup -Name $ResourceGroupName -Location $LocationName
+$SingleSubnet = New-AzVirtualNetworkSubnetConfig -Name $SubnetName -AddressPrefix $SubnetAddressPrefix
+$Vnet = New-AzVirtualNetwork -Name $NetworkName -ResourceGroupName $ResourceGroupName -Location $LocationName -AddressPrefix $VnetAddressPrefix -Subnet $SingleSubnet
+$PIP = New-AzPublicIpAddress -Name $PublicIPAddressName -ResourceGroupName $ResourceGroupName -Location $LocationName -AllocationMethod Dynamic
+$NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $ResourceGroupName -Location $LocationName -SubnetId $Vnet.Subnets[0] -PublicIpAddressId $PIP
+$Credential = New-Object System.Management.Automation.PSCredential ($VMLocalAdminUser, $VMLocalAdminSecurePassword)
+
+# Create VM configuration
+$VirtualMachine = New-AzVMConfig -VMName $VMName -VMSize $VMSize
+$VirtualMachine = Set-AzVMOperatingSystem -VM $VirtualMachine -Windows -ComputerName $VMName -Credential $Credential -ProvisionVMAgent -EnableAutoUpdate
+$VirtualMachine = Add-AzVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
+$VirtualMachine = Set-AzVMSourceImage -VM $VirtualMachine -PublisherName $publisherName -Offer $offerName -Skus $skuName -Version latest
+
+# Create VM
+New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationName -VM $VirtualMachine -Verbose
+```
+
+The parameters are accepted and the Resource Group is created:
+
+```
+PS C:\Users\rymccall\OneDrive - Microsoft\PowerShell> c:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1
+cmdlet createNewVM.ps1 at command pipeline position 1
+Supply values for the following parameters:
+vmName: examplevm
+VMLocalAdminUser: rymccall
+VMLocalAdminSecurePassword: *****************
+
+
+ResourceGroupName : examplevmRG
+Location          : eastus
+ProvisioningState : Succeeded
+Tags              :
+ResourceId        : /subscriptions/81d1b603-b602-4534-952e-a8889d3421a1/resourceGroups/examplevmRG
+
+```
+
+But it looks like we're getting error after error (warnings and verbose logging removed):
+
+```
+New-AzNetworkInterface : Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that 
+start with '/subscriptions/{subscriptionId}' or '/providers/{resourceProviderNamespace}/'.
+StatusCode: 400
+ReasonPhrase: Bad Request
+ErrorCode: LinkedInvalidPropertyId
+ErrorMessage: Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that start with  
+'/subscriptions/{subscriptionId}' or '/providers/{resourceProviderNamespace}/'.
+OperationID : 07a40ecb-c034-4380-8ad2-2cbcf56dec7c
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:59 char:8
++ $NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $Reso ...
++        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : CloseError: (:) [New-AzNetworkInterface], NetworkCloudException
+    + FullyQualifiedErrorId : Microsoft.Azure.Commands.Network.NewAzureNetworkInterfaceCommand
+
+Add-AzVMNetworkInterface : Cannot validate argument on parameter 'Id'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:65 char:68
++ ... ualMachine = Add-AzVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
++                                                                   ~~~~~~~
+    + CategoryInfo          : InvalidData: (:) [Add-AzVMNetworkInterface], ParameterBindingValidationException
+    + FullyQualifiedErrorId : ParameterArgumentValidationError,Microsoft.Azure.Commands.Compute.AddAzureVMNetworkInterfaceCommand
+
+VERBOSE: Performing the operation "New" on target "examplevm".
+New-AzVM : Required parameter 'networkProfile' is missing (null).
+ErrorCode: InvalidParameter
+ErrorMessage: Required parameter 'networkProfile' is missing (null).
+ErrorTarget: networkProfile
+StatusCode: 400
+ReasonPhrase: Bad Request
+OperationID : bb9bbad1-365a-484c-b46d-9a8017121da7
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 char:1
++ New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationNam ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : CloseError: (:) [New-AzVM], ComputeCloudException
+    + FullyQualifiedErrorId : Microsoft.Azure.Commands.Compute.NewAzureVMCommand
+```
+Needless to say, our script failed and our VM was not created. Okay, so our code has some bugs. No problem, let's break this down by the Error Messages. It looks like there are 3 errors here:
+
+```
+ErrorMessage: Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that start with  
+'/subscriptions/{subscriptionId}' or '/providers/{resourceProviderNamespace}/'.
+OperationID : 07a40ecb-c034-4380-8ad2-2cbcf56dec7c
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:59 char:8
++ $NIC = New-AzNetworkInterface -Name $NICName -ResourceGroupName $Reso ...
+```
+
+   * This error message is saying the property we entered on line 59 is incorrect because it's not a resource Id. Thus this command failed, and our variable `$NIC` is broke, null, and void.
+
+```
+Add-AzVMNetworkInterface : Cannot validate argument on parameter 'Id'. The argument is null or empty. Provide an argument that is not null or empty, and then try the command again.
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:65 char:68
++ ... ualMachine = Add-AzVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
+```
+
+   * This error message is saying the parameter we entered on line 65 at the 68th character is incorrect because it's a null or empty value. This value is `$NIC.Id` in our script. The previous error failed to set `$NIC` correctly. Thus this command failed because our object `$NIC` is broke, null, and void, and subsequently, there is no Id property.
+
+```
+ErrorMessage: Required parameter 'networkProfile' is missing (null).
+ErrorTarget: networkProfile
+StatusCode: 400
+ReasonPhrase: Bad Request
+OperationID : bb9bbad1-365a-484c-b46d-9a8017121da7
+At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 char:1
++ New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationNam ...
+```
+
+   * This final error message is the response that we failed to create our VM using the supplied script due to a broken networkProfile. This is because of the same initial error with our `$NIC` object. So basically, if the Networking portion is broken, we will not be able to successfully provision a VM using our script.
+
+So we understand our error messages and we have narrowed it down to the declared `$NIC` object on line 59 grandfathering all of our other problems. But we don't know the proper format for this parameter. What now?!
+
+Let's use the Debugger!
+
+![Debugging our VM script](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging_new_vm_script.gif)
+
+Here I did the following to successfully debug my script:
+
+1. I set a Breakpoint on the problem line, line 59. My script continues until I try to create the `$NIC` object. I am able to see all of the variables created up to now. 
+2. [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), the parameter `-SubnetId` is defined as `the ID of the subnet for which to create a network interface`. The value I'm passing in at the parameter `-SubnetId` is `$Vnet.Subnets[0]`. 
+   * **Breakdown**: The VNET is stored in `$VNet` and `$VNet.Subnets` grabs the VNET's associated Subnets as an array. Thus, `$Vnet.Subnets[0]` grabs the first (and quite possibly, only) member of the array, which is our Subnet. 
+   * **Issue**: The problem here, as defined by our error message, is that `-SubnetId` is expecting a resource Id that starts with '/subscriptions/{subscriptionId}...', not the Subnet object itself. How do we convert or extract the ID from the object? 
+   * **Solution**: Well luckily, the Debugger shows us the `Id` is a parameter we can select from the object with `$Vnet.Subnets[0].Id`, resulting in the string `/subscriptions/81d1b603-b602-4534-952e-a8889d3421a1/resourceGroups/examplevmRG/providers/Microsoft.Network/virtualNetworks/examplevmNet/subnets/examplevmSubnet` being passed to `New-AzNetworkInterface` rather than the Subnet object. Success!
+3. And as a matter of fact, we require this for the parameter `-PublicIpAddressId` as well! [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), this paramter `specifies the ID of a PublicIPAddress object to assign to a network interface`. Thus it also needs the ID instead of the object itself. I should've noticed by the names that it should be the ID of the object that we pass to our function, not the object itself. This is why our naming convention can be important; it can avoid careless errors down the road.
+
+### Advanced Debugging: 
+1. Debugging PowerShell script in Visual Studio Code – Part 1
+   * https://devblogs.microsoft.com/scripting/debugging-powershell-script-in-visual-studio-code-part-1/
+2. Debugging PowerShell script in Visual Studio Code – Part 2
+   * https://devblogs.microsoft.com/scripting/debugging-powershell-script-in-visual-studio-code-part-2/
+  
