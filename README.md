@@ -18,8 +18,9 @@
 ## How to Debug PowerShell Scripts
 Let's say you have a variable set to 1.
 
-`$myFirstVariable = 1;`
-
+```PowerShell
+$myFirstVariable = 1;
+```
 You make a script that is supposed to check if the variable is 5. If not, increment the variable by 1 until it becomes 5.
 
 ```PowerShell
