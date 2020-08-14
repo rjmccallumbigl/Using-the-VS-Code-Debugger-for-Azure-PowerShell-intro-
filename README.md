@@ -101,7 +101,9 @@ We can see all of the VM objects returned in our array, their internal propertie
 
 ### Azure PowerShell Script
 
-Now, let's say we have a slightly more complicated script that creates a new VM ([repo](https://github.com/rjmccallumbigl/Azure-PowerShell---Create-New-VM/blob/master/createNewVM.ps1)). I looked at the documentation, modified it to automatically grab some things, request other parameters to pass in as variables, and handle it mostly automatically.
+Now, let's say we have a slightly more complicated script that creates a new VM. I looked at the documentation, modified it to automatically grab some things, request other parameters to pass in as variables, and handle it mostly automatically.
+
+> ⚠ **This script will fail as-is and has an error in it we will explore below.** If you want the error free version without following the tutorial, it is in this [repo](https://github.com/rjmccallumbigl/Azure-PowerShell---Create-New-VM/blob/master/createNewVM.ps1).
 
 ```PowerShell
 ###########################################################################################################################################################
@@ -232,7 +234,7 @@ At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 
     + CategoryInfo          : CloseError: (:) [New-AzVM], ComputeCloudException
     + FullyQualifiedErrorId : Microsoft.Azure.Commands.Compute.NewAzureVMCommand
 ```
-Needless to say, our script failed and our VM was not created. Okay, so our code has some bugs. No problem, let's break this down by the Error Messages. It looks like there are 3 errors here:
+Needless to say, our script failed and our VM was not created. Okay, so our code has some bugs. No problem, let's break this down by the Error Messages. It looks like there are 3 primary errors here:
 
 ```
 ErrorMessage: Property id 'Microsoft.Azure.Commands.Network.Models.PSSubnet' at path 'properties.ipConfigurations[0].properties.subnet.id' is invalid. Expect fully qualified resource Id that start with  
@@ -274,10 +276,12 @@ Here I did the following to successfully debug my script:
 
 1. I set a Breakpoint on the problem line, line 59. My script continues until I try to create the `$NIC` object. I am able to see all of the variables created up to now. 
 2. [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), the parameter `-SubnetId` is defined as `the ID of the subnet for which to create a network interface`. The value I'm passing in at the parameter `-SubnetId` is `$Vnet.Subnets[0]`. 
-   * **Breakdown**: The VNET is stored in `$VNet` and `$VNet.Subnets` grabs the VNET's associated Subnets as an array. Thus, `$Vnet.Subnets[0]` grabs the first (and quite possibly, only) member of the array, which is our Subnet. 
-   * **Issue**: The problem here, as defined by our error message, is that `-SubnetId` is expecting a resource Id that starts with '/subscriptions/{subscriptionId}...', not the Subnet object itself. How do we convert or extract the ID from the object? 
+   * **Breakdown**: The VNET is stored in `$VNet` and `$VNet.Subnets` grabs the VNET's associated Subnets as an object array. Thus, `$Vnet.Subnets[0]` grabs the first (and quite possibly, only) member of the array, which is our primary Subnet object. 
+   * **Issue**: The problem here, as defined by our error message, is that `-SubnetId` is expecting a resource Id that starts with *'/subscriptions/{subscriptionId}...'*, not the Subnet object itself. How do we convert or extract the ID from the object? 
    * **Solution**: Well luckily, the Debugger shows us the `Id` is a parameter we can select from the object with `$Vnet.Subnets[0].Id`, resulting in the string `/subscriptions/81d1b603-b602-4534-952e-a8889d3421a1/resourceGroups/examplevmRG/providers/Microsoft.Network/virtualNetworks/examplevmNet/subnets/examplevmSubnet` being passed to `New-AzNetworkInterface` rather than the Subnet object. Success!
 3. And as a matter of fact, we require this for the parameter `-PublicIpAddressId` as well! [According to the documentation](https://docs.microsoft.com/en-us/powershell/module/az.network/new-aznetworkinterface?view=azps-4.5.0), this paramter `specifies the ID of a PublicIPAddress object to assign to a network interface`. Thus it also needs the ID instead of the object itself. I should've noticed by the names that it should be the ID of the object that we pass to our function, not the object itself. This is why our naming convention can be important; it can avoid careless errors down the road.
+
+If we fix these two parameters and re-run our script, we can successfully provision our VM. 
 
 ### Advanced Debugging: 
 1. Debugging PowerShell script in Visual Studio Code – Part 1
