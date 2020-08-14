@@ -94,7 +94,7 @@ By running our script, we grab all the VMs, display the VM in the first spot of 
 
 ![Inspecting our variable](https://github.com/rjmccallumbigl/Using-the-VS-Code-Debugger-for-Azure-PowerShell-intro-/blob/master/pics/azure_powershell_debugging.gif)
 
-We can see all of the VM objects returned in our array, the internal functions such as "length", the return values' types, etc.
+We can see all of the VM objects returned in our array, their internal properties such as "Count", the return values' types, etc.
 
 (BTW, if you're curious about catFacts.ps1, I was adapting [this script](https://gist.github.com/johnallers/178576f097a8a7986fcb17a92c88a486) to understand PowerShell API calls, definitely not preparing to prank co-workers, I swear.)
 
