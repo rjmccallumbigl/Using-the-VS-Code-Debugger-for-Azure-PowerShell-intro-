@@ -246,7 +246,7 @@ At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:65 
 + ... ualMachine = Add-AzVMNetworkInterface -VM $VirtualMachine -Id $NIC.Id
 ```
 
-   * This error message is saying the parameter we entered on line 65 at the 68th character is incorrect because it's a null or empty value. This value is `$NIC.Id` in our script. The previous error failed to set `$NIC` correctly. Thus this command failed because our variable $NIC is broke, null, and void.
+   * This error message is saying the parameter we entered on line 65 at the 68th character is incorrect because it's a null or empty value. This value is `$NIC.Id` in our script. The previous error failed to set `$NIC` correctly. Thus this command failed because our object `$NIC` is broke, null, and void, and subsequently, there is no Id property.
 
 ```
 ErrorMessage: Required parameter 'networkProfile' is missing (null).
@@ -258,7 +258,13 @@ At C:\Users\rymccall\Github\Azure-PowerShell---Create-New-VM\createNewVM.ps1:69 
 + New-AzVM -ResourceGroupName $ResourceGroupName -Location $LocationNam ...
 ```
 
-   * This final error message is the one saying the parameter we entered on line 65 at the 68th charcter is incorrect because it's a null or empty value. This value is `$NIC.Id` in our script. The previous error failed to set `$NIC` correctly. Thus this command failed because our variable $NIC is broke, null, and void.
+   * This final error message is the response that we failed to create our VM using the supplied script due to a broken networkProfile. This is because of the same initial error with our `$NIC` object. So basically, if the Networking portion is broken, we will not be able to successfully provision a VM using our script.
+
+So we understand our error messages and we have narrowed it down to the declared `$NIC` object on line 59 grandfathering all of our other problems. But we don't know the proper format for this parameter. What now?
+
+Let's use the Debugger!
+
+
 
 ### Advanced Debugging: 
 1. Debugging PowerShell script in Visual Studio Code – Part 1
